@@ -104,3 +104,25 @@ p3 <- ggMarginal(p2,
 png(filename = 'Broadway.png',width = 12,height = 5,units = 'in',res=120)
 p1 + p3
 dev.off()
+
+# my turn
+library(wesanderson)
+summary(grosses)
+grosses2 <- grosses %>%
+  mutate(year = year(ymd(week_ending)))
+summary(grosses2)
+unique(grosses$show)
+
+price_yr <- grosses2 %>% 
+  group_by(show,year) %>% 
+  summarise(price=sum(avg_ticket_price))
+summary(price_yr)
+
+darjeeling <- c("#FF0000", "#00A08A", "#F2AD00", "#F98400", "#5BBCD6")
+mypal <- pal_lengthen(x = 1:1122,shortpal = darjeeling)
+
+ggplot(price_yr)+
+  ggsidekick::theme_sleek()+
+  scale_color_manual(values=mypal)+
+  geom_jitter(aes(year,price,col=show))+
+  theme(legend.position = "none")
