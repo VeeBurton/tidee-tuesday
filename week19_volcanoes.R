@@ -1,105 +1,58 @@
+# libraries
+library(readxl)
+library(tidyverse)
+library(ggExtra)
+library(RColorBrewer)
 
 # load data
 tuesdata <- tidytuesdayR::tt_load(2020, week = 20)
-volcano <- tuesdata$volcano
-head(volcano)
-str(volcano)
-summary(volcano)
-
-tree.rings <- tuesdata$tree_rings
-head(tree.rings)
 
 # cleaning
-library(readxl)
-library(tidyverse)
-eruption_list <- tuesdata$eruptions %>% 
+eruptions <- tuesdata$eruptions %>% 
   janitor::clean_names() %>% 
   select(-contains("modifier"), -contains("uncertainty"))
-event_list <- tuesdata$events %>% 
+events <- tuesdata$events %>% 
   janitor::clean_names() %>% 
   select(-contains("modifier"), -contains("uncertainty"))
-volcano_list <- tuesdata$volcano %>% 
+volcanoes <- tuesdata$volcano %>% 
+  janitor::clean_names()
+treerings <- tuesdata$tree_rings %>% 
   janitor::clean_names()
 
-eruption_list %>% 
-  write_csv("data-raw/week19_2020_eruptions.csv")
-event_list %>% 
-  write_csv("data-raw/week19_2020_events.csv")
-volcano_list %>% 
-  write_csv("data-raw/week19_2020_volcano.csv")
+# explore
+summary(eruptions)
+summary(events)
+summary(volcanoes)
+summary(treerings)
 
+# what do i want to explore?
+# most destructive eruptions with population within 5km
 
-# from https://gitlab.gwdg.de/h.anandakumar/masterthesis/-/blob/master/tidyTues/tidyTueswk20.R
-head(eruption_list)
-# top 100
-sliced_eruptions  <- eruption_list %>%
-  arrange(desc(vei)) %>%
-  select(volcano_number, vei, eruption_number, start_year, end_year) %>% 
-  slice(1:100)
+unique(eruptions$eruption_category)
+unique(events$event_type)
 
-joined <- inner_join(volcano, sliced_eruptions, by="volcano_number")
-joined <- inner_join(joined, event_list, by="volcano_number")
-joined$volcano_name.x <- as.factor(joined$volcano_name.x)
+v.data <- merge(volcanoes,eruptions,by="volcano_number")
+summary(v.data)
+v.data[!duplicated(v.data),]
 
-head(joined)
+v.data$last_eruption_year <- as.numeric(v.data$last_eruption_year)
+destruct <- v.data %>% 
+  filter(eruption_category=="Confirmed Eruption" & vei>=5 & population_within_5_km>=1000 &
+           last_eruption_year>1980)
 
-joined <- joined %>%
-  select(vei,volcano_name.x, primary_volcano_type,
-         last_eruption_year, start_year, latitude,longitude,
-         country, region, tectonic_settings,
-         population_within_5_km:population_within_100_km) %>% 
-  distinct()
-
-library(maps)
-
-world <- map_data("world", wrap=c(0,360))
-
-library(wesanderson)
-library(xkcd)
-?xkcd()
-
-joined$lon2 <- ifelse(joined$longitude < -25, joined$longitude + 360, joined$longitude) 
-mapWorld <- map_data('world', wrap=c(-25,335), ylim=c(-55,75))
-
-# map of volcano locations, colour coded by elevation
-
-tiff("tidy20.tiff",units="in", width=8,height=5, res=300, compression = 'lzw') 
-ggplot() +
-  geom_polygon(
-    data = mapWorld,
-    aes(x = long, y = lat, group = group),
-    fill = "grey",
-    alpha = 0.4
-  ) +
-  geom_point(
-    data = joined,
-    aes(x = lon2, y = latitude, size=vei), shape=17,
-    colour="darksalmon",
-    alpha=0.6
-  ) +
-  labs(title = "Top 100 destructive Volcanoes of All Time",
-       subtitle = "Based on Volcanic Eruption Index-VEI",
-       caption = "Most of the 'destructive' volcanoes are around the ring of fire. The Ring of Fire (also known as the Rim of Fire or the Circum-Pacific belt) 
-       is a major area in the basin of the Pacific Ocean where many earthquakes and volcanic eruptions occur. In a large 40,000 km horseshoe shape, it is 
-       associated with a nearly continuous series of oceanic trenches, volcanic arcs, and volcanic belts and plate movements. It has 452 volcanoes") +
-  scale_size_continuous(breaks = c(5, 6, 7), labels = c("5","6","7"), name = "VEI")+
-  theme(
-    axis.line = element_blank(), 
-    axis.title = element_blank(),
-    # axis.text = element_blank(),
-    axis.ticks = element_blank(),
-    panel.background = element_rect(colour = NA, fill="black"),
-    panel.grid = element_blank(), 
-    plot.subtitle = element_text(colour="mistyrose1", size=11),
-    plot.caption = element_text(colour="mistyrose4", size=8),
-    plot.title = element_text(colour="mistyrose"),
-    plot.background = element_rect(fill = "black"),
-    legend.title = element_text(colour='mistyrose2'),
-    legend.background = element_rect(fill="black"),
-    legend.key = element_rect(fill="black"),
-    legend.text = element_text(colour="lightcoral"),
-    text = element_text(family = "xkcd", colour = "lightcoral")
-  )+
-  theme_xkcd()
-dev.off()
-
+destruct %>% ggplot()+
+  geom_jitter(aes(last_eruption_year,vei,size=vei,color=vei))+
+  #scale_fill_gradient2(low='yellow',mid='orange',high='red',aesthetics='fill')+
+  ggsidekick::theme_sleek()+
+  xlab("Date of last eruption")+
+  ylab("VEI (Explosivity Index)")+
+  theme(legend.position='none')+
+  theme(panel.background = element_rect(fill='black'))
+  
+# largest NZ eruptions
+unique(v.data$subregion)
+NZ <- v.data %>% 
+  filter(subregion=="New Zealand") %>% 
+  ggplot()+
+  geom_jitter(aes(x=longitude.x,y=latitude.x,size=vei))
+NZ
