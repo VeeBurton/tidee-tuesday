@@ -102,3 +102,52 @@ ggmap(NZmap,
   xlab("Longitude")+
   ylab("Latitude")+
   theme_minimal()
+
+# from https://github.com/tacookson/tidy-tuesday/blob/master/volcano-eruptions.Rmd
+# {r setup-and-import}
+library(tidyverse)
+library(lubridate)
+library(gganimate)
+library(extrafont)
+library(ggtext)
+
+volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
+eruptions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/eruptions.csv')
+
+# {r eruptions-animation-by-year}
+p <- eruptions %>%
+  # Only non-discredited eruptions since 1970
+  # Only ones where we know the VEI (since VEI is mapped to size of point)
+  filter(start_year >= 1970,
+         eruption_category != "Discredited Eruption",
+         !is.na(vei)) %>%
+  # Convert date fields into decimal year (e.g., Jun 2016 becomes 2016.5)
+  mutate(start_date = decimal_date(ymd(
+    paste(
+      year = start_year,
+      month = coalesce(pmax(start_month, 1), 1),
+      day = coalesce(pmax(start_day, 1), 1),
+      sep = "-"
+    )
+  ))) %>%
+  ggplot(aes(longitude, latitude, size = vei, group = start_year)) +
+  borders(colour = "grey90", fill = "grey90") +
+  geom_point(colour = "#e04324",
+             shape = 16,
+             alpha = 0.3) +
+  scale_radius(range = c(0.1, 9)) +
+  transition_time(start_year, range = c(1969, 2020)) +
+  labs(title = "KABOOM! The Past 50 Years of Volcanic Activity",
+       subtitle = "Volcanic <span style = 'color:#e04324'>**eruptions**</span> from 1970 to {pmax(round(frame_time, 0), 1970)}",
+       caption = "Source: Nature | Visualization: @alexcookson") +
+  enter_grow() +
+  shadow_mark() +
+  ggthemes::theme_map() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(family = "Bahnschrift", size = 22),
+    plot.subtitle = element_text(family = "Bahnschrift", size = 18),
+    plot.caption = element_text(family = "Bahnschrift", size = 12)
+  )
+anim <- animate(p, fps = 10, nframes = 10 * 30, start_pause = 10, end_pause = 25, width = 800, height = 500)
+anim_save("volcano-eruptions-1970-2020-short.gif", anim)
