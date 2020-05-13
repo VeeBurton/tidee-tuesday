@@ -89,9 +89,6 @@ NZ.volc <- v.data[which(v.data$subregion=="New Zealand" & v.data$last_eruption_y
 unique(NZ.volc$volcano_name.x)
 unique(NZ.volc$last_eruption_year)
 
-ggmap(NZmap)+
-  geom_jitter(data = NZ.volc, aes(x=longitude.x,y=latitude.x,
-                                  size=vei,
-                                  color=volcano_name.x),
-              shape=2,
-              stroke=2)
+ggmap(NZmap,
+      base_layer = ggplot(NZ.volc,aes(x=longitude.x,y=latitude.x)))+
+  geom_jitter(aes(size=vei,color=volcano_name.x,shape=2,stroke=2))
