@@ -105,6 +105,8 @@ ggmap(NZmap,
 
 # from https://github.com/jpwrobinson/tidytuesday/blob/master/volcano_tidytuesday_120520.R
 library(tidyverse)
+library(devtools)
+install_github('jpwrobinson/funk')
 library(funk)
 
 volcano <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-12/volcano.csv')
@@ -124,8 +126,6 @@ obs<-eruptions %>% filter(evidence_method_dating == 'Historical Observations' & 
 obs<-left_join(obs, volcano) %>%
   mutate(volcano_name = fct_reorder(volcano_name, latitude))
 obs$region<-factor(obs$region)
-
-
 
 plotter<-obs %>% filter(vei > 3 & elevation > 0) %>% mutate(long.lab=round(longitude, 0), population_within_10_km=log10(population_within_10_km+1)) 
 
@@ -175,7 +175,7 @@ right<-ggplot(plotter2) +
     plot.margin=unit(c(0.5, 1, 0.2, -0.5), 'cm')) +
   scale_y_continuous(expand=c(0, 0), breaks=seq(0, 100, 25)) +
   scale_x_discrete(expand=c(0.025,0.025), label=lab) 
-
+right
 
 
 g_legend<-function(a.gplot){
@@ -208,6 +208,7 @@ gleg2<-ggplot() + theme_void() +
         legend.key.size = unit(2,"line"),
         panel.border=element_blank(),
         plot.margin=unit(c(0, -2, -2.3, -2), 'cm'))
+gleg2
 
 pdf(file = 'volcano.pdf', height=11, width=10)
 t<-cowplot::plot_grid(left, right, rel_widths = c(1, 0.5), nrow=1,  label_size=15, 
