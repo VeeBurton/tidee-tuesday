@@ -85,10 +85,20 @@ NZmap <- get_map(taupo, zoom=7, scale=1, maptype = "watercolor", source = "stame
 ggmap(NZmap)
 # largest NZ eruptions
 unique(v.data$subregion)
-NZ.volc <- v.data[which(v.data$subregion=="New Zealand" & v.data$last_eruption_year>1900),]
-unique(NZ.volc$volcano_name.x)
-unique(NZ.volc$last_eruption_year)
+NZ.volc <- v.data %>% filter(subregion=="New Zealand" & last_eruption_year>2000) %>% 
+  group_by(volcano_name.x) %>% 
+  summarise(
+    lat=mean(latitude.x),
+    long=mean(longitude.x),
+    max_VEI=max(vei,na.rm=TRUE))
+
+NZ.volc <- NZ.volc %>% filter(!volcano_name.x=="Kaikohe-Bay of Islands")
+colnames(NZ.volc)[1]<-"Volcano"
 
 ggmap(NZmap,
-      base_layer = ggplot(NZ.volc,aes(x=longitude.x,y=latitude.x)))+
-  geom_jitter(aes(size=vei,color=volcano_name.x,shape=2,stroke=2))
+      base_layer = ggplot(NZ.volc,aes(x=long,y=lat)))+
+  geom_point(aes(size=max_VEI),color="darkred",shape=2,stroke=2)+
+  geom_text(aes(label=Volcano,hjust=1,vjust=1))+
+  xlab("Longitude")+
+  ylab("Latitude")+
+  theme_minimal()
