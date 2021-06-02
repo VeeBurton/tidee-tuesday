@@ -7,9 +7,9 @@ library(ggmap)
 register_google(key = "AIzaSyB_Sft1bVREQZ8T7BsTUzyg44L_MMgqM6I", write=TRUE)
 
 # find locations googling "location coordinates"
-edinburgh <- c(lon = -3.1, lat = 55.9)
+scotmid <- c(lon = -4, lat = 57)
 # Get map at zoom level 5: map_5
-map <- get_map(edinburgh, zoom = 10, scale = 1)
+map <- get_map(scotmid, zoom = 10, scale = 1)
 ggmap(map)
 
 # to add additional (point) data, swap out ggplot for a ggmap call e.g.
@@ -18,7 +18,7 @@ ggmap(map)+
   geom_point(aes(x,y,size=z), data=df)
 
 # nicer styles
-stamen.burgh <- get_map(edinburgh, zoom=10,scale=1,
+stamen.burgh <- get_map(scotmid, zoom=7,scale=1,
                         maptype = "watercolor",
                         source = "stamen")
 ggmap(stamen.burgh)
